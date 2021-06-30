@@ -6,23 +6,31 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 struct VideoSelectView: View {
     @StateObject var videoSelectViewModel = VideoSelectViewModel()
+    @State var videoAsset: AVAsset?
+    @State var trackingViewModal: Bool = false
+    let imageFrame: CGFloat
+    let layout: [GridItem]
     
+    init() {
+        self.imageFrame = UIScreen.main.bounds.size.width / 3
+        self.layout = [ GridItem(.fixed(imageFrame)),
+                        GridItem(.fixed(imageFrame)),
+                        GridItem(.fixed(imageFrame))]
+    }
     
     var body: some View {
-        GeometryReader { geometry in
-            let imageFrame = geometry.size.width / 3
-            let layout = [ GridItem(.fixed(imageFrame)),
-                           GridItem(.fixed(imageFrame)),
-                           GridItem(.fixed(imageFrame))]
+        NavigationView {
             ScrollView {
                 LazyVGrid(columns: layout) {
                     ForEach(videoSelectViewModel.videoAssets,
                             id: \.representedAssetIdentifer) { asset in
-                        NavigationLink(
-                            destination: TrackingView()) {
+                        Button {
+                            self.videoSelectViewModel.setVideoAsset(identifier: asset.representedAssetIdentifer)
+                        } label: {
                             Image(uiImage: asset.image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
@@ -30,11 +38,16 @@ struct VideoSelectView: View {
                                        height: imageFrame)
                                 .clipped()
                         }
+                        .fullScreenCover(isPresented: $videoSelectViewModel.isTrackingViewPresented) {
+                            if let videoAsset = self.videoSelectViewModel.videoAsset {
+                                TrackingView(videoAsset: videoAsset)
+                            }
+                        }
                     }
                 }
             }
             .onAppear {
-                self.videoSelectViewModel.setVideoAsset()
+                self.videoSelectViewModel.setAssetCellArray()
             }
         }
     }
