@@ -23,7 +23,6 @@ struct VideoSelectView: View {
     }
     
     var body: some View {
-        NavigationView {
             ScrollView {
                 LazyVGrid(columns: layout) {
                     ForEach(videoSelectViewModel.videoAssets,
@@ -49,7 +48,6 @@ struct VideoSelectView: View {
             .onAppear {
                 self.videoSelectViewModel.setAssetCellArray()
             }
-        }
     }
 }
 
