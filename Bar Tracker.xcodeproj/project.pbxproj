@@ -17,6 +17,10 @@
 		8954F89F268953C30011D4E9 /* VideoReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8954F89E268953C30011D4E9 /* VideoReader.swift */; };
 		8954F8A7268960B70011D4E9 /* BarTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8954F8A6268960B70011D4E9 /* BarTrackerTests.swift */; };
 		8954F8AF26896CB80011D4E9 /* TrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8954F8AE26896CB80011D4E9 /* TrackingView.swift */; };
+		89F390172694032200A3AC89 /* TrackingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F390162694032200A3AC89 /* TrackingViewController.swift */; };
+		89F390192694035000A3AC89 /* TrackingImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F390182694035000A3AC89 /* TrackingImageView.swift */; };
+		89F3901B269403FB00A3AC89 /* CommonTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F3901A269403FB00A3AC89 /* CommonTypes.swift */; };
+		89F3901D26941E2900A3AC89 /* VisionProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F3901C26941E2800A3AC89 /* VisionProcessor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +48,10 @@
 		8954F8A6268960B70011D4E9 /* BarTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarTrackerTests.swift; sourceTree = "<group>"; };
 		8954F8A8268960B70011D4E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8954F8AE26896CB80011D4E9 /* TrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingView.swift; sourceTree = "<group>"; };
+		89F390162694032200A3AC89 /* TrackingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingViewController.swift; sourceTree = "<group>"; };
+		89F390182694035000A3AC89 /* TrackingImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingImageView.swift; sourceTree = "<group>"; };
+		89F3901A269403FB00A3AC89 /* CommonTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonTypes.swift; sourceTree = "<group>"; };
+		89F3901C26941E2800A3AC89 /* VisionProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionProcessor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +135,10 @@
 			isa = PBXGroup;
 			children = (
 				8954F89E268953C30011D4E9 /* VideoReader.swift */,
+				89F390162694032200A3AC89 /* TrackingViewController.swift */,
+				89F390182694035000A3AC89 /* TrackingImageView.swift */,
+				89F3901A269403FB00A3AC89 /* CommonTypes.swift */,
+				89F3901C26941E2800A3AC89 /* VisionProcessor.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -240,11 +252,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				8954F89A2689517B0011D4E9 /* VideoSelectViewModel.swift in Sources */,
+				89F390172694032200A3AC89 /* TrackingViewController.swift in Sources */,
 				8954F8AF26896CB80011D4E9 /* TrackingView.swift in Sources */,
 				8954F8982689515C0011D4E9 /* VideoSelectView.swift in Sources */,
 				8954F89F268953C30011D4E9 /* VideoReader.swift in Sources */,
 				891CF90E267A061A007F6C07 /* ContentView.swift in Sources */,
+				89F3901B269403FB00A3AC89 /* CommonTypes.swift in Sources */,
+				89F390192694035000A3AC89 /* TrackingImageView.swift in Sources */,
 				891CF90C267A061A007F6C07 /* Bar_TrackerApp.swift in Sources */,
+				89F3901D26941E2900A3AC89 /* VisionProcessor.swift in Sources */,
 				893230C0268ABA95000EABB6 /* TrackingViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
