@@ -12,10 +12,10 @@ import AVKit
 struct TrackingView: View {
     @Environment(\.presentationMode) var presentationMode
     @StateObject var trackingViewModel = TrackingViewModel()
-    var videoAsset: AVAsset
+    var video: AVAsset
     
-    init(videoAsset: AVAsset) {
-        self.videoAsset = videoAsset
+    init(video: AVAsset) {
+        self.video = video
     }
     
     var body: some View {
@@ -30,13 +30,34 @@ struct TrackingView: View {
                 Spacer()
             }
             Spacer()
-            VideoPlayer(player: AVPlayer(playerItem: AVPlayerItem(asset: self.videoAsset)))
+            TrackingImageView(trackingViewModel: self.trackingViewModel, video: self.video)
+            Spacer()
+        }
+        .onAppear {
+            self.trackingViewModel.videoAsset = video
+            self.trackingViewModel.displayFirstVideoFrame()
         }
     }
 }
 
-struct TrackingView_Previews: PreviewProvider {
-    static var previews: some View {
-        TrackingView(videoAsset: AVAsset())
+struct TrackingImageView: View {
+    @ObservedObject var trackingViewModel: TrackingViewModel
+    
+    init(trackingViewModel: TrackingViewModel, video: AVAsset) {
+        self.trackingViewModel = trackingViewModel
+    }
+    
+    var body: some View {
+        if let frame = self.trackingViewModel.videoFrame {
+            Image(uiImage: frame)
+        }
     }
 }
+
+#if DEBUG
+struct TrackingView_Previews: PreviewProvider {
+    static var previews: some View {
+        TrackingView(video: AVAsset())
+    }
+}
+#endif
