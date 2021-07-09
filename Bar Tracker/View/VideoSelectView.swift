@@ -10,7 +10,7 @@ import AVFoundation
 
 struct VideoSelectView: View {
     @StateObject var videoSelectViewModel = VideoSelectViewModel()
-    @State var videoAsset: AVAsset?
+    @State var video: AVAsset?
     @State var trackingViewModal: Bool = false
     let imageFrame: CGFloat
     let layout: [GridItem]
@@ -38,8 +38,8 @@ struct VideoSelectView: View {
                                 .clipped()
                         }
                         .fullScreenCover(isPresented: $videoSelectViewModel.isTrackingViewPresented) {
-                            if let videoAsset = self.videoSelectViewModel.videoAsset {
-                                TrackingView(videoAsset: videoAsset)
+                            if let video = self.videoSelectViewModel.videoAsset {
+                                TrackingView(video: video)
                             }
                         }
                     }

@@ -75,16 +75,11 @@ class VideoSelectViewModel: ObservableObject {
         imageManger.requestAVAsset(forVideo: asset, options: videoOptions) { (video, _, _) in
             DispatchQueue.main.async {
                 if let video = video {
-                    self.processVideoAssetResult(videoAsset: video)
+                    self.videoAsset = video
                     self.isTrackingViewPresented.toggle()
-                    print("video asset in closure : \(self.videoAsset)")
                 }
             }
         }
-    }
-    
-    func processVideoAssetResult(videoAsset: AVAsset) {
-        self.videoAsset = videoAsset
     }
 }
 
