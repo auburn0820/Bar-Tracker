@@ -7,7 +7,6 @@
 
 import SwiftUI
 import AVFoundation
-import AVKit
 
 struct TrackingView: View {
     @Environment(\.presentationMode) var presentationMode
@@ -28,28 +27,37 @@ struct TrackingView: View {
                 }
                 .padding()
                 Spacer()
+                Button {
+                    self.trackingViewModel.drawLines()
+                } label: {
+                    Text("Draw Lines")
+                }
+                .padding()
             }
             Spacer()
             TrackingImageView(trackingViewModel: self.trackingViewModel, video: self.video)
+//            TrackingImageViewRepresentable(videoFrame: self.$trackingViewModel.videoFrame)
             Spacer()
         }
         .onAppear {
-            self.trackingViewModel.videoAsset = video
+            self.trackingViewModel.setVideoAsset(video: self.video)
             self.trackingViewModel.displayFirstVideoFrame()
+            self.trackingViewModel.setVideoTrack()
         }
     }
 }
 
 struct TrackingImageView: View {
     @ObservedObject var trackingViewModel: TrackingViewModel
-    
+
     init(trackingViewModel: TrackingViewModel, video: AVAsset) {
         self.trackingViewModel = trackingViewModel
     }
-    
+
     var body: some View {
         if let frame = self.trackingViewModel.videoFrame {
             Image(uiImage: frame)
+                
         }
     }
 }
