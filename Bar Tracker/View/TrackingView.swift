@@ -11,8 +11,10 @@ import AVFoundation
 struct TrackingView: View {
     @Environment(\.presentationMode) var presentationMode
     @StateObject var trackingViewModel = TrackingViewModel()
+    @State var startLocationOfRectangle: CGPoint = CGPoint.zero
+    @State var endLocationOfRectangle: CGPoint = CGPoint.zero
     var video: AVAsset
-    
+
     init(video: AVAsset) {
         self.video = video
     }
@@ -28,7 +30,7 @@ struct TrackingView: View {
                 .padding()
                 Spacer()
                 Button {
-                    self.trackingViewModel.drawLines()
+                    self.trackingViewModel.drawLinesAndRectangle()
                 } label: {
                     Text("Draw Lines")
                 }
@@ -36,7 +38,17 @@ struct TrackingView: View {
             }
             Spacer()
             TrackingImageView(trackingViewModel: self.trackingViewModel, video: self.video)
-//            TrackingImageViewRepresentable(videoFrame: self.$trackingViewModel.videoFrame)
+                .gesture(DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                self.trackingViewModel.rubberbandingStart = value.startLocation
+                                self.trackingViewModel.rubberbandingVector = CGPoint(x: abs(value.startLocation.x - value.location.x),
+                                                                                     y: abs(value.startLocation.y - value.location.y))
+                                self.trackingViewModel.drawLinesAndRectangle()
+                            }
+                            .onEnded { value in
+                                
+                            }
+                )
             Spacer()
         }
         .onAppear {
@@ -57,7 +69,6 @@ struct TrackingImageView: View {
     var body: some View {
         if let frame = self.trackingViewModel.videoFrame {
             Image(uiImage: frame)
-                
         }
     }
 }

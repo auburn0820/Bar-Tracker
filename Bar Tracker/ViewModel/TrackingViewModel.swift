@@ -14,16 +14,34 @@ import Vision
 class TrackingViewModel: ObservableObject {
     @Published var videoFrame: UIImage?
     
+    private var image: UIImage? {
+        didSet {
+            self.videoFrame = image
+        }
+    }
     private var imageSize: CGSize?
     private var renderer: UIGraphicsImageRenderer?
-    private var lines: [CGPoint] = []
-    private var polyRect = [TrackedPolyRect]()
+    private var lines: [CGPoint] = [CGPoint(x: 100, y: 100), CGPoint(x: 110, y: 110), CGPoint(x: 120, y: 120), CGPoint(x: 100, y: 150), CGPoint(x: 200, y: 70)]
+    private var polyRects = [TrackedPolyRect]()
     private var objectsToTrack: [TrackedPolyRect] = [TrackedPolyRect]()
     
     private var videoAsset: AVAsset?
     private var videoAssetReaderOutput: AVAssetReaderTrackOutput!
     private var assetReader: AVAssetReader!
     private var videoTrack: AVAssetTrack!
+    
+    var rubberbandingStart = CGPoint.zero
+    var rubberbandingVector = CGPoint.zero
+    var rubberbandingRect: CGRect {
+        let pt1 = self.rubberbandingStart
+        let pt2 = CGPoint(x: self.rubberbandingStart.x + self.rubberbandingVector.x,
+                          y: self.rubberbandingStart.y + self.rubberbandingVector.y)
+        let rect = CGRect(x: min(pt1.x, pt2.x),
+                          y: min(pt1.y, pt2.y),
+                          width: abs(pt1.x - pt2.x),
+                          height: abs(pt1.y - pt2.y))
+        return rect
+    }
     
     func setVideoAsset(video: AVAsset) {
         self.videoAsset = video
@@ -40,7 +58,7 @@ class TrackingViewModel: ObservableObject {
             let cgImage = try videoImageGenerator.copyCGImage(at: time, actualTime: nil)
             let uiImage = UIImage(cgImage: cgImage)
             if let thumbnail = adjustImageToScreen(imageToResize: uiImage) {
-                self.videoFrame = thumbnail
+                self.image = thumbnail
             }
         } catch {
             print(error.localizedDescription)
@@ -98,29 +116,46 @@ class TrackingViewModel: ObservableObject {
         return newImage
     }
     
-    func drawLines() {
-        guard let size = self.imageSize else { return }
-        self.renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer?.image { ctx in
-            ctx.cgContext.saveGState()
-            ctx.cgContext.setStrokeColor(UIColor.green.cgColor)
-            ctx.cgContext.setLineWidth(2)
-            
-            if self.lines.count > 2 {
-                for i in 0..<self.lines.count - 1 {
-                    let previous = lines[i]
-                    ctx.cgContext.move(to: previous)
-                    let current = lines[i + 1]
-                    ctx.cgContext.addLine(to: current)
-                }
-            }
-            
-            ctx.cgContext.drawPath(using: .fillStroke)
-            ctx.cgContext.strokePath()
-            ctx.cgContext.restoreGState()
+    func drawLinesAndRectangle() {
+        // 다음 프레임 이미지를 인자로 받아 해당 프레임에 라인과 사각형을 그려줘야 함
+        guard let size = self.imageSize else {
+            return
+        }
+        guard let image = self.image else {
+            return
         }
         
-        self.videoFrame = image
+        UIGraphicsBeginImageContext(size)
+        let ctx = UIGraphicsGetCurrentContext()!
+        
+        ctx.saveGState()
+        ctx.clear(CGRect(origin: .zero, size: size))
+        ctx.setLineWidth(2)
+        
+        image.draw(at: CGPoint.zero)
+        
+        if self.rubberbandingRect != CGRect.zero {
+            ctx.setStrokeColor(UIColor.blue.cgColor)
+            ctx.setLineDash(phase: CGFloat(0.0), lengths: [4.0, 2.0])
+            ctx.stroke(self.rubberbandingRect)
+        }
+        
+        ctx.setStrokeColor(UIColor.green.cgColor)
+        
+        if self.lines.count > 2 {
+            for i in 0..<self.lines.count - 1 {
+                let previous = lines[i]
+                ctx.move(to: previous)
+                let current = lines[i + 1]
+                ctx.addLine(to: current)
+            }
+        }
+        ctx.strokePath()
+        
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        self.videoFrame = newImage
     }
     
     func nextFrame() -> CVPixelBuffer? {
@@ -202,8 +237,8 @@ class TrackingViewModel: ObservableObject {
             }
             
             self.lines.append(line)
-            self.polyRect = rects ?? self.objectsToTrack
-            self.drawLines()
+            self.polyRects = rects ?? self.objectsToTrack
+            self.drawLinesAndRectangle()
         }
     }
     
