@@ -41,6 +41,7 @@ struct TrackingView: View {
                             .onChanged { value in
                                 if self.isDragStart {
                                     self.trackingViewModel.rubberbandingStart = value.startLocation
+                                    self.isDragStart.toggle()
                                 } else {
                                     self.trackingViewModel.rubberbandingStart.applying(CGAffineTransform(translationX: value.translation.width, y: value.translation.height))
                                 }
@@ -51,6 +52,7 @@ struct TrackingView: View {
                             .onEnded { value in
                                 self.trackingViewModel.drawLinesAndRectangle(isTouchesEnded: true)
                                 self.trackingViewModel.setObjectToTrack()
+                                self.isDragStart.toggle()
                             }
                 )
             Spacer()
