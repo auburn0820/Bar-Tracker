@@ -21,9 +21,9 @@ class TrackingViewModel: ObservableObject {
     }
     private var imageSize: CGSize?
     private var renderer: UIGraphicsImageRenderer?
-    private var lines: [CGPoint] = [CGPoint(x: 100, y: 100), CGPoint(x: 110, y: 110), CGPoint(x: 120, y: 120), CGPoint(x: 100, y: 150), CGPoint(x: 200, y: 70)]
+    private var lines = [CGPoint]()
     private var polyRects = [TrackedPolyRect]()
-    private var objectsToTrack: [TrackedPolyRect] = [TrackedPolyRect]()
+    private var objectsToTrack = [TrackedPolyRect]()
     
     private var videoAsset: AVAsset?
     private var videoAssetReaderOutput: AVAssetReaderTrackOutput!
@@ -41,6 +41,20 @@ class TrackingViewModel: ObservableObject {
                           width: abs(pt1.x - pt2.x),
                           height: abs(pt1.y - pt2.y))
         return rect
+    }
+//    private var rubberbandingNormalized: CGRect? {
+//        guard let imageSize = self.imageSize else {
+//            return nil
+//        }
+//        var rect = self.rubberbandingRect
+//        
+//        rect.origin.x = (rect.origin.x - self.)
+//    }
+    
+    func setObjectToTrack() {
+        let rect = self.rubberbandingRect
+        
+        self.objectsToTrack.append(TrackedPolyRect(cgRect: rect, color: UIColor.green))
     }
     
     func setVideoAsset(video: AVAsset) {
@@ -116,7 +130,7 @@ class TrackingViewModel: ObservableObject {
         return newImage
     }
     
-    func drawLinesAndRectangle() {
+    func drawLinesAndRectangle(isTouchesEnded: Bool) {
         // 다음 프레임 이미지를 인자로 받아 해당 프레임에 라인과 사각형을 그려줘야 함
         guard let size = self.imageSize else {
             return
@@ -135,12 +149,28 @@ class TrackingViewModel: ObservableObject {
         image.draw(at: CGPoint.zero)
         
         if self.rubberbandingRect != CGRect.zero {
-            ctx.setStrokeColor(UIColor.blue.cgColor)
-            ctx.setLineDash(phase: CGFloat(0.0), lengths: [4.0, 2.0])
-            ctx.stroke(self.rubberbandingRect)
+            if !isTouchesEnded {
+                ctx.setStrokeColor(UIColor.blue.cgColor)
+                ctx.setLineDash(phase: CGFloat(0.0), lengths: [4.0, 2.0])
+                ctx.stroke(self.rubberbandingRect)
+            } else {
+                ctx.setStrokeColor(UIColor.green.cgColor)
+                ctx.stroke(self.rubberbandingRect)
+            }
         }
         
-        ctx.setStrokeColor(UIColor.green.cgColor)
+        for polyRect in self.polyRects {
+            ctx.setStrokeColor(UIColor.green.cgColor)
+            let cornerPoints = polyRect.cornerPoints
+            var previous = cornerPoints[cornerPoints.count - 1]
+            
+            for cornerPoint in cornerPoints {
+                ctx.move(to: previous)
+                let current = cornerPoint
+                ctx.addLine(to: current)
+                previous = current
+            }
+        }
         
         if self.lines.count > 2 {
             for i in 0..<self.lines.count - 1 {
@@ -150,7 +180,9 @@ class TrackingViewModel: ObservableObject {
                 ctx.addLine(to: current)
             }
         }
+        
         ctx.strokePath()
+        ctx.restoreGState()
         
         let newImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
@@ -169,6 +201,7 @@ class TrackingViewModel: ObservableObject {
     func performTracking() {
         var inputObservations = [UUID: VNDetectedObjectObservation]()
         var trackedObjects = [UUID: TrackedPolyRect]()
+//        self.objectsToTrack = self.polyRects
         
         for object in self.objectsToTrack {
             let inputObservation = VNDetectedObjectObservation(boundingBox: object.boundingBox)
@@ -184,7 +217,7 @@ class TrackingViewModel: ObservableObject {
                 break
             }
             
-            var rects = [TrackedPolyRect]()
+            self.polyRects.removeAll()
             var line = CGPoint()
             var trackingRequests = [VNRequest]()
             
@@ -210,12 +243,17 @@ class TrackingViewModel: ObservableObject {
                 
                 let rectStyle: TrackedPolyRectStyle = observation.confidence > 0.5 ? .solid : .dashed
                 let knownRect = trackedObjects[observation.uuid]!
-                rects.append(TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle))
+                self.polyRects.append(TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle))
                 line = getMidPoint(rect: TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle))
+                self.lines.append(line)
                 inputObservations[observation.uuid] = observation
             }
             
-            self.displayFrame(frame, withAffineTransform: self.videoTrack.preferredTransform.inverted(), rects: rects, line: line)
+            let ciImage = CIImage(cvPixelBuffer: frame)
+            let uiImage = UIImage(ciImage: ciImage)
+            self.videoFrame = uiImage
+            
+//            drawLinesAndRectangle(isTouchesEnded: true)
             
             usleep(useconds_t(self.videoTrack.nominalFrameRate * 1000.0))
         }
@@ -238,7 +276,7 @@ class TrackingViewModel: ObservableObject {
             
             self.lines.append(line)
             self.polyRects = rects ?? self.objectsToTrack
-            self.drawLinesAndRectangle()
+            self.drawLinesAndRectangle(isTouchesEnded: true)
         }
     }
     

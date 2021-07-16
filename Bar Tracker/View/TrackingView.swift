@@ -11,8 +11,7 @@ import AVFoundation
 struct TrackingView: View {
     @Environment(\.presentationMode) var presentationMode
     @StateObject var trackingViewModel = TrackingViewModel()
-    @State var startLocationOfRectangle: CGPoint = CGPoint.zero
-    @State var endLocationOfRectangle: CGPoint = CGPoint.zero
+    @State var isDragStart: Bool = true
     var video: AVAsset
 
     init(video: AVAsset) {
@@ -30,9 +29,9 @@ struct TrackingView: View {
                 .padding()
                 Spacer()
                 Button {
-                    self.trackingViewModel.drawLinesAndRectangle()
+                    self.trackingViewModel.performTracking()
                 } label: {
-                    Text("Draw Lines")
+                    Text("Play")
                 }
                 .padding()
             }
@@ -40,13 +39,18 @@ struct TrackingView: View {
             TrackingImageView(trackingViewModel: self.trackingViewModel, video: self.video)
                 .gesture(DragGesture(minimumDistance: 0)
                             .onChanged { value in
-                                self.trackingViewModel.rubberbandingStart = value.startLocation
-                                self.trackingViewModel.rubberbandingVector = CGPoint(x: abs(value.startLocation.x - value.location.x),
-                                                                                     y: abs(value.startLocation.y - value.location.y))
-                                self.trackingViewModel.drawLinesAndRectangle()
+                                if self.isDragStart {
+                                    self.trackingViewModel.rubberbandingStart = value.startLocation
+                                } else {
+                                    self.trackingViewModel.rubberbandingStart.applying(CGAffineTransform(translationX: value.translation.width, y: value.translation.height))
+                                }
+                                
+                                self.trackingViewModel.rubberbandingVector = CGPoint(x: value.translation.width, y: value.translation.height)
+                                self.trackingViewModel.drawLinesAndRectangle(isTouchesEnded: false)
                             }
                             .onEnded { value in
-                                
+                                self.trackingViewModel.drawLinesAndRectangle(isTouchesEnded: true)
+                                self.trackingViewModel.setObjectToTrack()
                             }
                 )
             Spacer()
