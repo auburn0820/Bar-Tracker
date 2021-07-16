@@ -286,4 +286,27 @@ class TrackingViewModel: ObservableObject {
         
         return CGPoint(x: midX, y: midY)
     }
+    
+    func handleDragging(value: DragGesture.Value, isDragStart: inout Bool, state: GestureState) {
+        switch state {
+        case .onChanged:
+            if isDragStart {
+                self.rubberbandingStart = value.startLocation
+                isDragStart.toggle()
+            } else {
+                self.rubberbandingStart.applying(CGAffineTransform(translationX: value.translation.width, y: value.translation.height))
+            }
+            self.rubberbandingVector = CGPoint(x: value.translation.width, y: value.translation.height)
+            self.drawLinesAndRectangle(isTouchesEnded: false)
+        case .onEnded:
+            self.setObjectToTrack()
+            isDragStart.toggle()
+            self.drawLinesAndRectangle(isTouchesEnded: true)
+        }
+    }
+}
+
+enum GestureState {
+    case onChanged
+    case onEnded
 }

@@ -39,20 +39,13 @@ struct TrackingView: View {
             TrackingImageView(trackingViewModel: self.trackingViewModel, video: self.video)
                 .gesture(DragGesture(minimumDistance: 0)
                             .onChanged { value in
-                                if self.isDragStart {
-                                    self.trackingViewModel.rubberbandingStart = value.startLocation
-                                    self.isDragStart.toggle()
-                                } else {
-                                    self.trackingViewModel.rubberbandingStart.applying(CGAffineTransform(translationX: value.translation.width, y: value.translation.height))
-                                }
-                                
-                                self.trackingViewModel.rubberbandingVector = CGPoint(x: value.translation.width, y: value.translation.height)
-                                self.trackingViewModel.drawLinesAndRectangle(isTouchesEnded: false)
+                                self.trackingViewModel.handleDragging(value: value, isDragStart: &self.isDragStart, state: .onChanged)
                             }
                             .onEnded { value in
-                                self.trackingViewModel.drawLinesAndRectangle(isTouchesEnded: true)
-                                self.trackingViewModel.setObjectToTrack()
-                                self.isDragStart.toggle()
+//                                self.trackingViewModel.drawLinesAndRectangle(isTouchesEnded: true)
+//                                self.trackingViewModel.setObjectToTrack()
+//                                self.isDragStart.toggle()
+                                self.trackingViewModel.handleDragging(value: value, isDragStart: &self.isDragStart, state: .onEnded)
                             }
                 )
             Spacer()
