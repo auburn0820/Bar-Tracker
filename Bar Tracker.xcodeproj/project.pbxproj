@@ -16,6 +16,8 @@
 		8954F89A2689517B0011D4E9 /* VideoSelectViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8954F8992689517B0011D4E9 /* VideoSelectViewModel.swift */; };
 		8954F8A7268960B70011D4E9 /* BarTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8954F8A6268960B70011D4E9 /* BarTrackerTests.swift */; };
 		8954F8AF26896CB80011D4E9 /* TrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8954F8AE26896CB80011D4E9 /* TrackingView.swift */; };
+		8977A02926A9499E00D485A5 /* VideoReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8977A02826A9499E00D485A5 /* VideoReader.swift */; };
+		89DB00AC269AFCEB00E98D85 /* VisionTrackingProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DB00AB269AFCEB00E98D85 /* VisionTrackingProcessor.swift */; };
 		89F3901B269403FB00A3AC89 /* CommonTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F3901A269403FB00A3AC89 /* CommonTypes.swift */; };
 /* End PBXBuildFile section */
 
@@ -43,6 +45,8 @@
 		8954F8A6268960B70011D4E9 /* BarTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarTrackerTests.swift; sourceTree = "<group>"; };
 		8954F8A8268960B70011D4E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8954F8AE26896CB80011D4E9 /* TrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingView.swift; sourceTree = "<group>"; };
+		8977A02826A9499E00D485A5 /* VideoReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoReader.swift; sourceTree = "<group>"; };
+		89DB00AB269AFCEB00E98D85 /* VisionTrackingProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionTrackingProcessor.swift; sourceTree = "<group>"; };
 		89F3901A269403FB00A3AC89 /* CommonTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonTypes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -127,6 +131,8 @@
 			isa = PBXGroup;
 			children = (
 				89F3901A269403FB00A3AC89 /* CommonTypes.swift */,
+				89DB00AB269AFCEB00E98D85 /* VisionTrackingProcessor.swift */,
+				8977A02826A9499E00D485A5 /* VideoReader.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -242,6 +248,8 @@
 				8954F89A2689517B0011D4E9 /* VideoSelectViewModel.swift in Sources */,
 				8954F8AF26896CB80011D4E9 /* TrackingView.swift in Sources */,
 				8954F8982689515C0011D4E9 /* VideoSelectView.swift in Sources */,
+				89DB00AC269AFCEB00E98D85 /* VisionTrackingProcessor.swift in Sources */,
+				8977A02926A9499E00D485A5 /* VideoReader.swift in Sources */,
 				891CF90E267A061A007F6C07 /* ContentView.swift in Sources */,
 				89F3901B269403FB00A3AC89 /* CommonTypes.swift in Sources */,
 				891CF90C267A061A007F6C07 /* Bar_TrackerApp.swift in Sources */,
