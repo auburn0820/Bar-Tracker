@@ -9,6 +9,14 @@ import Foundation
 import UIKit
 import Vision
 
+enum VisionTrackerProcessorError: Error {
+    case readerInitializationFailed
+    case firstFrameReadFailed
+    case objectTrackingFailed
+    case rectangleDetectionFailed
+    case videoAssetReadFailed
+}
+
 enum TrackedObjectType: Int {
     case object
     case rectangle

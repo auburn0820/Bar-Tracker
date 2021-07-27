@@ -10,6 +10,7 @@ import AVFoundation
 import Darwin
 import SwiftUI
 import Vision
+import Combine
 
 class TrackingViewModel: ObservableObject {
     @Published var videoFrame: UIImage?
@@ -22,13 +23,10 @@ class TrackingViewModel: ObservableObject {
     private var imageSize: CGSize?
     private var renderer: UIGraphicsImageRenderer?
     private var lines = [CGPoint]()
-    private var polyRects = [TrackedPolyRect]()
-    private var objectsToTrack = [TrackedPolyRect]()
-    
+    private var polyRect: TrackedPolyRect?
     private var videoAsset: AVAsset?
-    private var videoAssetReaderOutput: AVAssetReaderTrackOutput!
-    private var assetReader: AVAssetReader!
-    private var videoTrack: AVAssetTrack!
+    private var frameCounter = PassthroughSubject<UIImage, Never>()
+    private var frameSubscriber: AnyCancellable?
     
     var rubberbandingStart = CGPoint.zero
     var rubberbandingVector = CGPoint.zero
@@ -42,72 +40,59 @@ class TrackingViewModel: ObservableObject {
                           height: abs(pt1.y - pt2.y))
         return rect
     }
-//    private var rubberbandingNormalized: CGRect? {
-//        guard let imageSize = self.imageSize else {
-//            return nil
-//        }
-//        var rect = self.rubberbandingRect
-//        
-//        rect.origin.x = (rect.origin.x - self.)
-//    }
+    var rubberbandingNormalized: CGRect {
+        guard let imageSize = self.imageSize else {
+            return CGRect.zero
+        }
+        
+        var rect = rubberbandingRect
+        
+        rect.origin.x = rect.origin.x / imageSize.width
+        rect.origin.y = rect.origin.y / imageSize.height
+        rect.size.width /= imageSize.width
+        rect.size.height /= imageSize.height
+        // Adjust to Vision.framework input requrement - origin at LLC
+        rect.origin.y = 1.0 - rect.origin.y - rect.size.height
+        
+        return rect
+    }
     
     func setObjectToTrack() {
-        let rect = self.rubberbandingRect
-        
-        self.objectsToTrack.append(TrackedPolyRect(cgRect: rect, color: UIColor.green))
+        let rect = self.rubberbandingNormalized
+        self.polyRect = TrackedPolyRect(cgRect: rect, color: UIColor.green)
     }
     
     func setVideoAsset(video: AVAsset) {
         self.videoAsset = video
     }
     
-    func displayFirstVideoFrame() {
-        guard let videoAsset = self.videoAsset else { return }
-        let videoImageGenerator = AVAssetImageGenerator(asset: videoAsset)
-        videoImageGenerator.appliesPreferredTrackTransform = true
-        
-        let time = CMTimeMakeWithSeconds(1.0, preferredTimescale: 600)
-        
-        do {
-            let cgImage = try videoImageGenerator.copyCGImage(at: time, actualTime: nil)
-            let uiImage = UIImage(cgImage: cgImage)
-            if let thumbnail = adjustImageToScreen(imageToResize: uiImage) {
-                self.image = thumbnail
+    func setFrameSubscriber() {
+        frameSubscriber = frameCounter
+            .throttle(for: 1, scheduler: DispatchQueue.global(qos: .background), latest: true)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] image in
+                self?.videoFrame = image
             }
-        } catch {
-            print(error.localizedDescription)
-            return
-        }
     }
     
-    func setVideoTrack() {
-        guard let video = self.videoAsset else { return }
-        
-        let array = video.tracks(withMediaType: AVMediaType.video)
-        self.videoTrack = array[0]
-        
-        do {
-            self.assetReader = try AVAssetReader(asset: video)
-        } catch {
-            print("Failed to create AVAssetReader: \(error.localizedDescription)")
+    func displayFirstVideoFrame() {
+        guard let videoAsset = self.videoAsset else {
+            print("Can't read video asset.")
+            return
+        }
+        guard let videoReader = VideoReader(videoAsset: videoAsset) else {
+            print("Can't initialize VideoReader.")
+            return
+        }
+        guard let firstFrame = videoReader.nextFrame() else {
+            print("Can't read next frame.")
             return
         }
         
-        self.videoAssetReaderOutput = AVAssetReaderTrackOutput(track: self.videoTrack, outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange])
-        
-        guard self.videoAssetReaderOutput != nil else {
-            return
-        }
-        
-        self.videoAssetReaderOutput.alwaysCopiesSampleData = true
-        
-        guard self.assetReader.canAdd(videoAssetReaderOutput) else {
-            return
-        }
-        
-        self.assetReader.add(videoAssetReaderOutput)
-        
-        guard self.assetReader.startReading() else { return }
+        let ciImage = CIImage(cvPixelBuffer: firstFrame).transformed(by: videoReader.affineTransform)
+        let uiImage = UIImage(ciImage: ciImage)
+
+        self.image = adjustImageToScreen(imageToResize: uiImage)
     }
     
     func adjustImageToScreen(imageToResize image: UIImage) -> UIImage? {
@@ -139,6 +124,8 @@ class TrackingViewModel: ObservableObject {
             return
         }
         
+        removeZeroLine()
+        
         UIGraphicsBeginImageContext(size)
         let ctx = UIGraphicsGetCurrentContext()!
         
@@ -159,14 +146,15 @@ class TrackingViewModel: ObservableObject {
             }
         }
         
-        for polyRect in self.polyRects {
-            ctx.setStrokeColor(UIColor.green.cgColor)
+        
+        ctx.setStrokeColor(UIColor.green.cgColor)
+        if let polyRect = self.polyRect {
             let cornerPoints = polyRect.cornerPoints
-            var previous = cornerPoints[cornerPoints.count - 1]
-            
+            var previous = scaleRect(cornerPoint: cornerPoints[cornerPoints.count - 1])
+
             for cornerPoint in cornerPoints {
                 ctx.move(to: previous)
-                let current = cornerPoint
+                let current = scaleRect(cornerPoint: cornerPoint)
                 ctx.addLine(to: current)
                 previous = current
             }
@@ -174,9 +162,9 @@ class TrackingViewModel: ObservableObject {
         
         if self.lines.count > 2 {
             for i in 0..<self.lines.count - 1 {
-                let previous = lines[i]
+                let previous = scaleLine(line: lines[i])
                 ctx.move(to: previous)
-                let current = lines[i + 1]
+                let current = scaleLine(line: lines[i + 1])
                 ctx.addLine(to: current)
             }
         }
@@ -187,96 +175,100 @@ class TrackingViewModel: ObservableObject {
         let newImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         
-        self.videoFrame = newImage
+        if let image = newImage {
+            self.videoFrame = image
+        }
     }
     
-    func nextFrame() -> CVPixelBuffer? {
-        guard let sampleBuffer = self.videoAssetReaderOutput.copyNextSampleBuffer() else {
-            return nil
+    private func removeZeroLine() {
+        for i in 0..<self.lines.count {
+            if lines[i].x == 1.0 || lines[i].y == 1.0 {
+                lines.remove(at: i)
+            }
         }
-        
-        return CMSampleBufferGetImageBuffer(sampleBuffer)
     }
     
     func performTracking() {
-        var inputObservations = [UUID: VNDetectedObjectObservation]()
-        var trackedObjects = [UUID: TrackedPolyRect]()
-//        self.objectsToTrack = self.polyRects
-        
-        for object in self.objectsToTrack {
-            let inputObservation = VNDetectedObjectObservation(boundingBox: object.boundingBox)
-            inputObservations[inputObservation.uuid] = inputObservation
-            trackedObjects[inputObservation.uuid] = object
+        guard let videoAsset = self.videoAsset else {
+            print("Can't read video asset.")
+            return
+        }
+        guard let videoReader = VideoReader(videoAsset: videoAsset) else {
+            print("Can't initialize VideoReader.")
+            return
         }
         
-        let requestHandler = VNSequenceRequestHandler()
-        var trackingFailedForAtLeastOneObject = false
+        var inputObservations = [UUID: VNDetectedObjectObservation]()
+        var trackedObjects = [UUID: TrackedPolyRect]()
         
-        while true {
-            guard let frame = self.nextFrame() else {
-                break
-            }
-            
-            self.polyRects.removeAll()
-            var line = CGPoint()
-            var trackingRequests = [VNRequest]()
-            
-            for inputObservation in inputObservations {
-                let request = VNTrackObjectRequest(detectedObjectObservation: inputObservation.value)
-                request.trackingLevel = .accurate
-                trackingRequests.append(request)
-            }
-            
-            do {
-                try requestHandler.perform(trackingRequests, on: frame)
-            } catch {
-                trackingFailedForAtLeastOneObject = true
-            }
-            
-            for processedRequest in trackingRequests {
-                guard let results = processedRequest.results as? [VNObservation] else {
+        guard let rect = self.polyRect else {
+            return
+        }
+        
+        let inputObservation = VNDetectedObjectObservation(boundingBox: rect.boundingBox)
+        inputObservations[inputObservation.uuid] = inputObservation
+        trackedObjects[inputObservation.uuid] = rect
+        
+        let requestHandler = VNSequenceRequestHandler()
+        
+        DispatchQueue.global().async {
+            while true {
+                guard let frame = videoReader.nextFrame() else {
+                    break
+                }
+                
+                var rects = [TrackedPolyRect]()
+                var line = CGPoint()
+                var request: VNTrackingRequest!
+                
+                for inputObservation in inputObservations {
+                    request = VNTrackObjectRequest(detectedObjectObservation: inputObservation.value)
+                    request.trackingLevel = .accurate
+                }
+                
+                do {
+                    try requestHandler.perform([request], on: frame, orientation: videoReader.orientation)
+                } catch {
+                    print(error.localizedDescription)
+                }
+                
+                guard let result = request.results as? [VNObservation] else {
                     continue
                 }
-                guard let observation = results.first as? VNDetectedObjectObservation else {
+                
+                guard let observation = result.first as? VNDetectedObjectObservation else {
                     continue
                 }
                 
                 let rectStyle: TrackedPolyRectStyle = observation.confidence > 0.5 ? .solid : .dashed
                 let knownRect = trackedObjects[observation.uuid]!
-                self.polyRects.append(TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle))
-                line = getMidPoint(rect: TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle))
+                
+                let rectToAppend = TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle)
+                
+                rects.append(rectToAppend)
+                line = self.getMidPoint(rect: rectToAppend)
+                
                 self.lines.append(line)
+                self.polyRect = rectToAppend
+                
                 inputObservations[observation.uuid] = observation
+                
+                self.displayFrame(frame, withAffineTransform: videoReader.affineTransform)
+                usleep(useconds_t(videoReader.frameRateInSeconds))
             }
-            
-            let ciImage = CIImage(cvPixelBuffer: frame)
-            let uiImage = UIImage(ciImage: ciImage)
-            self.videoFrame = uiImage
-            
-//            drawLinesAndRectangle(isTouchesEnded: true)
-            
-            usleep(useconds_t(self.videoTrack.nominalFrameRate * 1000.0))
-        }
-        
-        self.displayFirstVideoFrame()
-        
-        if trackingFailedForAtLeastOneObject {
-            print("Object tracking failed")
-            return
         }
     }
     
-    func displayFrame(_ frame: CVPixelBuffer?, withAffineTransform transform: CGAffineTransform, rects: [TrackedPolyRect]?, line: CGPoint) {
+    func displayFrame(_ frame: CVPixelBuffer?, withAffineTransform transform: CGAffineTransform) {
         DispatchQueue.main.async {
             if let frame = frame {
                 let ciImage = CIImage(cvImageBuffer: frame).transformed(by: transform)
                 let uiImage = UIImage(ciImage: ciImage)
-                self.videoFrame = uiImage
+                self.image = self.adjustImageToScreen(imageToResize: uiImage)
+                self.rubberbandingVector = .zero
+                self.rubberbandingStart = .zero
+                self.drawLinesAndRectangle(isTouchesEnded: true)
             }
-            
-            self.lines.append(line)
-            self.polyRects = rects ?? self.objectsToTrack
-            self.drawLinesAndRectangle(isTouchesEnded: true)
         }
     }
     
@@ -303,6 +295,25 @@ class TrackingViewModel: ObservableObject {
             isDragStart.toggle()
             self.drawLinesAndRectangle(isTouchesEnded: true)
         }
+    }
+    
+    private func scaleRect(cornerPoint point: CGPoint) -> CGPoint {
+        // Adjust bBox from Vision.framework coordinate system (origin at LLC) to imageView coordinate system (origin at ULC)
+        let pointY = 1.0 - point.y
+        guard let scaleFactor = self.imageSize else {
+            return CGPoint.zero
+        }
+        
+        return CGPoint(x: point.x * scaleFactor.width, y: pointY * scaleFactor.height)
+    }
+    
+    private func scaleLine(line: CGPoint) -> CGPoint {
+        let pointY = 1.0 - line.y
+        guard let scaleFactor = self.imageSize else {
+            return CGPoint.zero
+        }
+        
+        return CGPoint(x: line.x * scaleFactor.width, y: pointY * scaleFactor.height)
     }
 }
 
