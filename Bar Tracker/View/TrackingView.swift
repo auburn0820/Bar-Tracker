@@ -25,6 +25,7 @@ struct TrackingView: View {
                 if self.isStatusBarPresented {
                     HStack {
                         Button(action: {
+                            self.trackingViewModel.isFinished.toggle()
                             self.presentationMode.wrappedValue.dismiss()
                         }, label: {
                             Text("Back")
@@ -63,6 +64,7 @@ struct TrackingView: View {
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
             .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             .onAppear {
+                self.trackingViewModel.isFinished = false
                 self.trackingViewModel.setVideoAsset(video: self.video)
                 self.trackingViewModel.setFrameSubscriber()
                 self.trackingViewModel.displayFirstVideoFrame()

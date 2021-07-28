@@ -14,6 +14,7 @@ import Combine
 
 class TrackingViewModel: ObservableObject {
     @Published var videoFrame: UIImage?
+    @Published var isFinished: Bool = false
     
     private var image: UIImage? {
         didSet {
@@ -75,6 +76,19 @@ class TrackingViewModel: ObservableObject {
             }
     }
     
+    func convertSampleBufferToUIImage(cvPixelBuffer frame: CVPixelBuffer, transform: CGAffineTransform) -> UIImage? {
+        let ciImage = CIImage(cvPixelBuffer: frame).transformed(by: transform)
+        
+        let ctx = CIContext(options: nil)
+        guard let cgImage = ctx.createCGImage(ciImage, from: ciImage.extent) else {
+            return nil
+        }
+        
+        let uiImage = UIImage(cgImage: cgImage)
+        
+        return uiImage
+    }
+    
     func displayFirstVideoFrame() {
         guard let videoAsset = self.videoAsset else {
             print("Can't read video asset.")
@@ -88,21 +102,30 @@ class TrackingViewModel: ObservableObject {
             print("Can't read next frame.")
             return
         }
-        
-        let ciImage = CIImage(cvPixelBuffer: firstFrame).transformed(by: videoReader.affineTransform)
-        let uiImage = UIImage(ciImage: ciImage)
+        guard let uiImage = convertSampleBufferToUIImage(cvPixelBuffer: firstFrame, transform: videoReader.affineTransform) else {
+            return
+        }
 
         self.image = adjustImageToScreen(imageToResize: uiImage)
     }
     
     func adjustImageToScreen(imageToResize image: UIImage) -> UIImage? {
         let size = image.size
-        let width = UIScreen.main.bounds.width
+        var convertRatio: CGFloat
+        var newWidth: CGFloat
+        var newHeight: CGFloat
         
-        let widthRatio = width / size.width
-        let height = size.height * widthRatio
+        if image.size.width > image.size.height {
+            convertRatio = UIScreen.main.bounds.width
+            newWidth = convertRatio
+            newHeight = size.height * (newWidth / size.width)
+        } else {
+            convertRatio = UIScreen.main.bounds.height
+            newHeight = convertRatio
+            newWidth = size.width * (newHeight / size.height)
+        }
         
-        let newSize = CGSize(width: width, height: height)
+        let newSize = CGSize(width: newWidth, height: newHeight)
         let rect = CGRect(origin: .zero, size: newSize)
         
         UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
@@ -211,8 +234,8 @@ class TrackingViewModel: ObservableObject {
         
         let requestHandler = VNSequenceRequestHandler()
         
-        DispatchQueue.global().async {
-            while true {
+        DispatchQueue.global(qos: .background).async {
+            while !self.isFinished {
                 guard let frame = videoReader.nextFrame() else {
                     break
                 }
@@ -246,7 +269,7 @@ class TrackingViewModel: ObservableObject {
                 let rectToAppend = TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle)
                 
                 rects.append(rectToAppend)
-                line = self.getMidPoint(rect: rectToAppend)
+                line = self.getRectMidPoint(rect: rectToAppend)
                 
                 self.lines.append(line)
                 self.polyRect = rectToAppend
@@ -262,8 +285,9 @@ class TrackingViewModel: ObservableObject {
     func displayFrame(_ frame: CVPixelBuffer?, withAffineTransform transform: CGAffineTransform) {
         DispatchQueue.main.async {
             if let frame = frame {
-                let ciImage = CIImage(cvImageBuffer: frame).transformed(by: transform)
-                let uiImage = UIImage(ciImage: ciImage)
+                guard let uiImage = self.convertSampleBufferToUIImage(cvPixelBuffer: frame, transform: transform) else {
+                    return
+                }
                 self.image = self.adjustImageToScreen(imageToResize: uiImage)
                 self.rubberbandingVector = .zero
                 self.rubberbandingStart = .zero
@@ -272,7 +296,7 @@ class TrackingViewModel: ObservableObject {
         }
     }
     
-    func getMidPoint(rect: TrackedPolyRect) -> CGPoint {
+    func getRectMidPoint(rect: TrackedPolyRect) -> CGPoint {
         let midX = (rect.bottomLeft.x + rect.bottomRight.x) / 2
         let midY = (rect.bottomLeft.y + rect.topLeft.y) / 2
         
