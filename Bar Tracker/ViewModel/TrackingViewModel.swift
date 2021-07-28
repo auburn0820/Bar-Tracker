@@ -94,35 +94,41 @@ class TrackingViewModel: ObservableObject {
             print("Can't read video asset.")
             return
         }
-        guard let videoReader = VideoReader(videoAsset: videoAsset) else {
-            print("Can't initialize VideoReader.")
+        
+        let imageGenerator = AVAssetImageGenerator(asset: videoAsset)
+        imageGenerator.appliesPreferredTrackTransform = true
+        
+        do {
+            let firstFrame = try imageGenerator.copyCGImage(at: CMTimeMake(value: 1, timescale: 600), actualTime: nil)
+            let uiImage = UIImage(cgImage: firstFrame)
+            self.image = adjustImageToScreen(imageToResize: uiImage)
+        } catch {
+            print(error.localizedDescription)
             return
         }
-        guard let firstFrame = videoReader.nextFrame() else {
-            print("Can't read next frame.")
-            return
-        }
-        guard let uiImage = convertSampleBufferToUIImage(cvPixelBuffer: firstFrame, transform: videoReader.affineTransform) else {
-            return
-        }
-
-        self.image = adjustImageToScreen(imageToResize: uiImage)
     }
     
     func adjustImageToScreen(imageToResize image: UIImage) -> UIImage? {
         let size = image.size
-        var convertRatio: CGFloat
         var newWidth: CGFloat
         var newHeight: CGFloat
         
-        if image.size.width > image.size.height {
-            convertRatio = UIScreen.main.bounds.width
-            newWidth = convertRatio
+        if size.width > size.height {
+            newWidth = UIScreen.main.bounds.width
             newHeight = size.height * (newWidth / size.width)
+            
+            if(newHeight > UIScreen.main.bounds.height) {
+                newWidth = newWidth * (UIScreen.main.bounds.width / newHeight)
+                newHeight = UIScreen.main.bounds.height
+            }
         } else {
-            convertRatio = UIScreen.main.bounds.height
-            newHeight = convertRatio
+            newHeight = UIScreen.main.bounds.height
             newWidth = size.width * (newHeight / size.height)
+            
+            if(newWidth > UIScreen.main.bounds.width) {
+                newHeight = newHeight * (UIScreen.main.bounds.width / newWidth)
+                newWidth = UIScreen.main.bounds.width
+            }
         }
         
         let newSize = CGSize(width: newWidth, height: newHeight)
