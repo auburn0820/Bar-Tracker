@@ -12,6 +12,10 @@ import Darwin
 class VideoReader {
     static private let millisecondsInSecond: Float32 = 1000.0
     
+    var nominalFrameRate: Float32 {
+        return self.videoTrack.nominalFrameRate
+    }
+    
     var frameRateInMilliseconds: Float32 {
         return self.videoTrack.nominalFrameRate
     }
