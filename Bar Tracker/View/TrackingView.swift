@@ -46,26 +46,28 @@ struct TrackingView: View {
                     .position(x: geometry.size.width / 2)
                     .zIndex(1)
                 }
-                TrackingImageView(trackingViewModel: self.trackingViewModel, video: self.video)
-                    .gesture(TapGesture(count: 1)
-                                .onEnded {
-                                    self.isStatusBarPresented.toggle()
-                                })
-                    .gesture(DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    self.trackingViewModel.handleDragging(value: value, isDragStart: &self.isDragStart, state: .onChanged)
-                                }
-                                .onEnded { value in
-                                    self.trackingViewModel.handleDragging(value: value, isDragStart: &self.isDragStart, state: .onEnded)
-                                }
-                    )
-                    .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
+                Group {
+                    TrackingImageView(trackingViewModel: self.trackingViewModel, video: self.video)
+                        .gesture(TapGesture(count: 1)
+                                    .onEnded {
+                                        self.isStatusBarPresented.toggle()
+                                    })
+                        .gesture(DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        self.trackingViewModel.handleDragging(value: value, isDragStart: &self.isDragStart, state: .onChanged)
+                                    }
+                                    .onEnded { value in
+                                        self.trackingViewModel.handleDragging(value: value, isDragStart: &self.isDragStart, state: .onEnded)
+                                    }
+                        )
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
+                .contentShape(Rectangle())
+                .gesture(TapGesture(count: 1)
+                            .onEnded {
+                                self.isStatusBarPresented.toggle()
+                            })
             }
-            .contentShape(Rectangle())
-            .gesture(TapGesture(count: 1)
-                        .onEnded {
-                            self.isStatusBarPresented.toggle()
-                        })
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
             .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             .onAppear {
