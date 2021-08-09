@@ -61,6 +61,11 @@ struct TrackingView: View {
                     )
                     .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
             }
+            .contentShape(Rectangle())
+            .gesture(TapGesture(count: 1)
+                        .onEnded {
+                            self.isStatusBarPresented.toggle()
+                        })
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
             .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             .onAppear {
