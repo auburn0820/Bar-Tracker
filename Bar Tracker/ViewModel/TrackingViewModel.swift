@@ -240,7 +240,7 @@ class TrackingViewModel: ObservableObject {
         
         let requestHandler = VNSequenceRequestHandler()
         
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.global(qos: .userInitiated).async {
             while !self.isFinished {
                 guard let frame = videoReader.nextFrame() else {
                     break
