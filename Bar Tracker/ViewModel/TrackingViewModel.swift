@@ -240,14 +240,14 @@ class TrackingViewModel: ObservableObject {
         
         let requestHandler = VNSequenceRequestHandler()
         
-        DispatchQueue.global(qos: .userInitiated).async {
-            while !self.isFinished {
+        DispatchQueue.global().async { [weak self] in
+            guard let isFinished = self?.isFinished else { return }
+            while !isFinished {
                 guard let frame = videoReader.nextFrame() else {
                     break
                 }
                 
                 var rects = [TrackedPolyRect]()
-                var line = CGPoint()
                 var request: VNTrackingRequest!
                 
                 for inputObservation in inputObservations {
@@ -275,14 +275,14 @@ class TrackingViewModel: ObservableObject {
                 let rectToAppend = TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle)
                 
                 rects.append(rectToAppend)
-                line = self.getRectMidPoint(rect: rectToAppend)
+                guard let line = self?.getRectMidPoint(rect: rectToAppend) else { return }
                 
-                self.lines.append(line)
-                self.polyRect = rectToAppend
+                self?.lines.append(line)
+                self?.polyRect = rectToAppend
                 
                 inputObservations[observation.uuid] = observation
                 
-                self.displayFrame(frame, withAffineTransform: videoReader.affineTransform)
+                self?.displayFrame(frame, withAffineTransform: videoReader.affineTransform)
                 usleep(useconds_t(videoReader.frameRateInSeconds))
             }
         }
