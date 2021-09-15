@@ -273,10 +273,10 @@ class TrackingViewModel: ObservableObject {
                 
                 let trackedPolyRect = TrackedPolyRect(observation: observation, color: knownRect.color, style: rectStyle)
                 
-                guard let line = self?.getRectMidPoint(rect: rectToAppend) else { return }
+                guard let line = self?.getRectMidPoint(rect: trackedPolyRect) else { return }
                 
                 self?.lines.append(line)
-                self?.polyRect = rectToAppend
+                self?.polyRect = trackedPolyRect
                 
                 inputObservations[observation.uuid] = observation
                 
