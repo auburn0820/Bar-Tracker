@@ -32,9 +32,6 @@ class BarTrackerTests: XCTestCase {
     }
 
     func testVideoAssetCount() {
-        videoSelectViewModel.setVideoAsset()
-        let count = videoSelectViewModel.videoAssets.count
         
-        print(count)
     }
 }
