@@ -23,7 +23,7 @@ class VideoSelectViewModel: ObservableObject {
         let assetsOptions = PHFetchOptions()
         
         assetsOptions.includeAssetSourceTypes = [.typeCloudShared, .typeUserLibrary, .typeiTunesSynced]
-        assetsOptions.sortDescriptors = [NSSortDescriptor(key: "modificationDate", ascending: false)]
+        assetsOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
         
         self.assets = PHAsset.fetchAssets(with: .video, options: assetsOptions)
     }
