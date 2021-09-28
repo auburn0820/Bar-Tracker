@@ -260,7 +260,7 @@ class TrackingViewModel: ObservableObject {
                     print(error.localizedDescription)
                 }
                 
-                guard let result = request.results as? [VNObservation] else {
+                guard let result = request.results else {
                     continue
                 }
                 
