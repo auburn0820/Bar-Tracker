@@ -11,6 +11,7 @@ import Darwin
 import SwiftUI
 import Vision
 import Combine
+import SwiftVideoGenerator
 
 class TrackingViewModel: ObservableObject {
     @Published var videoFrame: UIImage?
@@ -28,6 +29,8 @@ class TrackingViewModel: ObservableObject {
     private var videoAsset: AVAsset?
     private var frameCounter = PassthroughSubject<UIImage, Never>()
     private var frameSubscriber: AnyCancellable?
+    private var imagesToMakeVideo = [UIImage]()
+    private var isMakeVideo = false
     
     var rubberbandingStart = CGPoint.zero
     var rubberbandingVector = CGPoint.zero
@@ -87,6 +90,12 @@ class TrackingViewModel: ObservableObject {
         let uiImage = UIImage(cgImage: cgImage)
         
         return uiImage
+    }
+    
+    func clearAllLines() {
+        self.displayFirstVideoFrame()
+        self.lines.removeAll()
+        self.polyRect = nil
     }
     
     func displayFirstVideoFrame() {
@@ -206,6 +215,10 @@ class TrackingViewModel: ObservableObject {
         
         if let image = newImage {
             self.videoFrame = image
+            self.imagesToMakeVideo.append(image)
+//            if self.isMakeVideo {
+//                self.imagesToMakeVideo.append(image)
+//            }
         }
     }
     
@@ -284,6 +297,17 @@ class TrackingViewModel: ObservableObject {
                 usleep(useconds_t(videoReader.frameRateInSeconds))
             }
         }
+        
+        if self.isMakeVideo {
+            VideoGenerator.fileName = "Hello"
+            VideoGenerator.shouldOptimiseImageForVideo = true
+            
+            VideoGenerator.current.generate(withImages: self.imagesToMakeVideo, andAudios: [], andType: .singleAudioMultipleImage, { progress in
+                print(progress)
+            }, outcome: { result in
+                print(result)
+            })
+        }
     }
     
     func displayFrame(_ frame: CVPixelBuffer?, withAffineTransform transform: CGAffineTransform) {
@@ -298,6 +322,11 @@ class TrackingViewModel: ObservableObject {
                 self.drawLinesAndRectangle(isTouchesEnded: true)
             }
         }
+    }
+    
+    func saveTrackedLineAddedVideoToLocalLibrary() {
+        self.isMakeVideo.toggle()
+        self.performTracking()
     }
     
     func getRectMidPoint(rect: TrackedPolyRect) -> CGPoint {
