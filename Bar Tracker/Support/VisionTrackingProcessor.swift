@@ -8,6 +8,11 @@
 import Foundation
 import Vision
 
+protocol VisionTrackingProcessorDelegate {
+    func displayFrame(_ frame: CVPixelBuffer?, withAffineTransform transform: CGAffineTransform)
+    
+}
+
 class VisionTrackingProcessor {
     
 }
