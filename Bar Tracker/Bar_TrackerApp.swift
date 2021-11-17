@@ -12,7 +12,7 @@ struct Bar_TrackerApp: App {
     
     var body: some Scene {
         WindowGroup {
-            VideoSelectView()
+            ContentView()
         }
     }
 }

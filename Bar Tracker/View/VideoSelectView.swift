@@ -46,7 +46,7 @@ struct VideoSelectView: View {
                 }
             }
             .onAppear {
-                self.videoSelectViewModel.setAssetCellArray()
+                self.videoSelectViewModel.requestAcessToPhotoLibrary()
             }
     }
 }

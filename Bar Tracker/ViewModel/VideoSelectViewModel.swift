@@ -10,20 +10,38 @@ import UIKit
 import Photos
 
 class VideoSelectViewModel: ObservableObject {
+    // MARK: Properties
     @Published var videoAssets = [AssetCell]()
     @Published var isTrackingViewPresented: Bool = false
+    @Published var isShowPermissionAlert: Bool = true
     var assets: PHFetchResult<PHAsset>?
     var videoAsset: AVAsset?
     
-    init() {
-        loadAssetsFromLibrary()
+    
+    // MARK: Methods
+    func requestAcessToPhotoLibrary() {
+        if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized {
+            self.loadAssetsFromLibrary()
+            self.setAssetCellArray()
+            return
+        }
+        
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+            switch status {
+            case .authorized:
+                self.loadAssetsFromLibrary()
+                self.setAssetCellArray()
+            default:
+                break
+            }
+        }
     }
     
     func loadAssetsFromLibrary() {
         let assetsOptions = PHFetchOptions()
         
         assetsOptions.includeAssetSourceTypes = [.typeCloudShared, .typeUserLibrary, .typeiTunesSynced]
-        assetsOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
+        assetsOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         
         self.assets = PHAsset.fetchAssets(with: .video, options: assetsOptions)
     }
@@ -51,7 +69,11 @@ class VideoSelectViewModel: ObservableObject {
     
     func findPHAsset(identifier: String) -> PHAsset? {
         var foundAsset: PHAsset? = nil
-        self.assets?.enumerateObjects { (asset, _, stop) in
+        guard let assets = assets else {
+            return nil
+        }
+
+        assets.enumerateObjects { (asset, _, stop) in
             if asset.localIdentifier == identifier {
                 foundAsset = asset
                 stop.pointee = true
