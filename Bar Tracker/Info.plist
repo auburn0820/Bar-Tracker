@@ -21,7 +21,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>앱이 사용자의 라이브러리에 접근하려고 합니다</string>
+	<string>운동 자세 분석을 위해 사용자의 영상이 필요합니다</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
