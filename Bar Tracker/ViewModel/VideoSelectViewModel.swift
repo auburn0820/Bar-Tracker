@@ -20,12 +20,6 @@ class VideoSelectViewModel: ObservableObject {
     
     // MARK: Methods
     func requestAcessToPhotoLibrary() {
-        if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized {
-            self.loadAssetsFromLibrary()
-            self.setAssetCellArray()
-            return
-        }
-        
         PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
             switch status {
             case .authorized:
