@@ -9,8 +9,6 @@ import XCTest
 @testable import Bar_Tracker
 
 class BarTrackerTests: XCTestCase {
-    private var videoSelectViewModel = VideoSelectViewModel()
-    
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
     }
@@ -29,9 +27,5 @@ class BarTrackerTests: XCTestCase {
         measure {
             // Put the code you want to measure the time of here.
         }
-    }
-
-    func testVideoAssetCount() {
-        
     }
 }

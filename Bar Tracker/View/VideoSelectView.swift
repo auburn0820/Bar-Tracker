@@ -26,9 +26,9 @@ struct VideoSelectView: View {
             ScrollView {
                 LazyVGrid(columns: layout) {
                     ForEach(videoSelectViewModel.videoAssets,
-                            id: \.representedAssetIdentifer) { asset in
+                            id: \.id) { asset in
                         Button {
-                            self.videoSelectViewModel.setVideoAsset(identifier: asset.representedAssetIdentifer)
+                            self.videoSelectViewModel.setVideoAsset(identifier: asset.id)
                         } label: {
                             Image(uiImage: asset.image)
                                 .resizable()

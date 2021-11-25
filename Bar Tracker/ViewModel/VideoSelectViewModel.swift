@@ -13,10 +13,8 @@ class VideoSelectViewModel: ObservableObject {
     // MARK: Properties
     @Published var videoAssets = [AssetCell]()
     @Published var isTrackingViewPresented: Bool = false
-    @Published var isShowPermissionAlert: Bool = true
     var assets: PHFetchResult<PHAsset>?
     var videoAsset: AVAsset?
-    
     
     // MARK: Methods
     func requestAcessToPhotoLibrary() {
@@ -33,7 +31,6 @@ class VideoSelectViewModel: ObservableObject {
     
     func loadAssetsFromLibrary() {
         let assetsOptions = PHFetchOptions()
-        
         assetsOptions.includeAssetSourceTypes = [.typeCloudShared, .typeUserLibrary, .typeiTunesSynced]
         assetsOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         
@@ -48,25 +45,27 @@ class VideoSelectViewModel: ObservableObject {
         imageOptions.deliveryMode = .highQualityFormat
         imageOptions.resizeMode = .fast
         
-        guard let assets = self.assets else { return }
+        guard let assets = self.assets else {
+            return
+        }
         
         assets.enumerateObjects({ (asset, _, _) in
             let identifier = asset.localIdentifier
             
-            imageManager.requestImage(for: asset, targetSize: CGSize(width: 100, height: 100), contentMode: .aspectFill, options: imageOptions) { (image, _) in
+            imageManager.requestImage(for: asset, targetSize: CGSize(width: 100, height: 100), contentMode: .aspectFill, options: imageOptions) { [weak self] (image, _) in
                 if let image = image {
-                    self.videoAssets.append(AssetCell(representedAssetIdentifer: identifier, image: image))
+                    self?.videoAssets.append(AssetCell(id: identifier, image: image))
                 }
             }
         })
     }
     
-    func findPHAsset(identifier: String) -> PHAsset? {
-        var foundAsset: PHAsset? = nil
-        guard let assets = assets else {
+    func findPHAssetWithIdentifier(identifier: String) -> PHAsset? {
+        var foundAsset: PHAsset?
+        guard let assets = self.assets else {
             return nil
         }
-
+        
         assets.enumerateObjects { (asset, _, stop) in
             if asset.localIdentifier == identifier {
                 foundAsset = asset
@@ -78,7 +77,7 @@ class VideoSelectViewModel: ObservableObject {
     }
     
     func setVideoAsset(identifier: String) {
-        guard let asset = findPHAsset(identifier: identifier) else {
+        guard let asset = findPHAssetWithIdentifier(identifier: identifier) else {
             fatalError("Failed to find asset with identifier \(identifier)")
         }
         
@@ -87,19 +86,18 @@ class VideoSelectViewModel: ObservableObject {
         videoOptions.deliveryMode = .highQualityFormat
         videoOptions.isNetworkAccessAllowed = true
         
-        // escaping closure가 비동기로 동작하기 때문에 핸들링 해야 함
-        imageManger.requestAVAsset(forVideo: asset, options: videoOptions) { (video, _, _) in
+        imageManger.requestAVAsset(forVideo: asset, options: videoOptions) { [weak self] (video, _, _) in
             DispatchQueue.main.async {
                 if let video = video {
-                    self.videoAsset = video
-                    self.isTrackingViewPresented.toggle()
+                    self?.videoAsset = video
+                    self?.isTrackingViewPresented.toggle()
                 }
             }
         }
     }
 }
 
-struct AssetCell {
-    var representedAssetIdentifer: String = ""
-    var image: UIImage
+struct AssetCell: Identifiable {
+    let id: String
+    let image: UIImage
 }
